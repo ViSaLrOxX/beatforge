@@ -1,4 +1,4 @@
-# BeatForge 🥁
+# BeatForge
 
 A browser-based 16-step drum sequencer built with the Web Audio API. No dependencies, no install — open `index.html` and start making beats.
 
