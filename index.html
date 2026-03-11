@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeatForge</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810;
+  --surface: #0e0e1a;
+  --panel: #12121f;
+  --border: #1e1e35;
+  --cyan: #00f5ff;
+  --pink: #ff006e;
+  --yellow: #ffe600;
+  --green: #00ff88;
+  --orange: #ff6b00;
+  --purple: #b700ff;
+  --red: #ff2244;
+  --text: #e8e8ff;
+  --muted: #444466;
+  --active-glow: 0 0 12px var(--cyan), 0 0 24px rgba(0,245,255,0.3);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,245,255,0.015) 2px, rgba(0,245,255,0.015) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,245,255,0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+.everything { position: relative; z-index: 1; width: 100%; max-width: 980px; }
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.2rem;
+}
+.logo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+  text-shadow: 0 0 20px rgba(0,245,255,0.5);
+}
+.logo span { color: var(--pink); text-shadow: 0 0 20px rgba(255,0,110,0.5); }
+.subtitle {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.5rem;
+}
+.btn {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.2rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--text); color: var(--text); }
+.btn.play-btn {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  font-size: 1.1rem;
+  padding: 0.5rem 1.5rem;
+}
+.btn.play-btn:hover, .btn.play-btn.active {
+  background: var(--cyan);
+  color: #000;
+  box-shadow: var(--active-glow);
+}
+.btn.clear-btn:hover { border-color: var(--red); color: var(--red); }
+.bpm-control {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-left: auto;
+}
+.bpm-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.2em; }
+.bpm-display {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--yellow);
+  text-shadow: 0 0 10px rgba(255,230,0,0.4);
+  min-width: 3ch;
+  text-align: center;
+}
+.bpm-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+.bpm-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--yellow);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255,230,0,0.5);
+}
+.sequencer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+.track {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0.8rem;
+  align-items: center;
+}
+.track-name {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-align: right;
+  padding-right: 0.5rem;
+}
+.track-steps {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
+}
+.step {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all 0.1s;
+  position: relative;
+}
+.step:hover { border-color: var(--muted); }
+.step.on { background: var(--track-color); border-color: var(--track-color); box-shadow: 0 0 8px var(--track-color), 0 0 2px var(--track-color); }
+.step.playing { background: #fff !important; border-color: #fff !important; box-shadow: 0 0 16px #fff, 0 0 4px #fff !important; }
+.step.current-col { border-color: rgba(255,255,255,0.15); }
+.beat-divider {
+  grid-column: span 1;
+}
+.track-steps .step:nth-child(4n+1) { border-left: 2px solid rgba(255,255,255,0.08); }
+.playhead {
+  height: 3px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.playhead-cursor {
+  position: absolute;
+  top: 0;
+  width: calc(100% / 16);
+  height: 100%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  transition: left 0.05s linear;
+  left: 0;
+}
+.vis-bar {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 60px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 2rem;
+}
+.vis-bar-item {
+  flex: 1;
+  background: var(--border);
+  border-radius: 2px;
+  transition: height 0.05s ease;
+  min-height: 2px;
+}
+.kick-row { --track-color: var(--cyan); }
+.snare-row { --track-color: var(--pink); }
+.hihat-row { --track-color: var(--yellow); }
+.openhat-row { --track-color: var(--green); }
+.clap-row { --track-color: var(--orange); }
+.bass-row { --track-color: var(--purple); }
+.kick-row .track-name { color: var(--cyan); }
+.snare-row .track-name { color: var(--pink); }
+.hihat-row .track-name { color: var(--yellow); }
+.openhat-row .track-name { color: var(--green); }
+.clap-row .track-name { color: var(--orange); }
+.bass-row .track-name { color: var(--purple); }
+.presets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.preset-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  padding: 0.35rem 0.9rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.preset-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.section-label {
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+</style>
+</head>
+<body>
+<div class="everything">
+  <header>
+    <div class="logo">Beat<span>Forge</span></div>
+    <div class="subtitle">16-Step Drum Sequencer</div>
+  </header>
+
+  <div class="transport">
+    <button class="btn play-btn" id="playBtn">▶ PLAY</button>
+    <button class="btn clear-btn" onclick="clearAll()">CLEAR</button>
+    <div class="bpm-control">
+      <span class="bpm-label">BPM</span>
+      <div class="bpm-display" id="bpmDisplay">120</div>
+      <input class="bpm-range" type="range" min="60" max="200" value="120" id="bpmRange">
+    </div>
+  </div>
+
+  <div class="playhead"><div class="playhead-cursor" id="playheadCursor"></div></div>
+
+  <div class="vis-bar" id="visBar"></div>
+
+  <div class="sequencer" id="sequencer"></div>
+
+  <div style="margin-top:1.5rem">
+    <div class="section-label">Presets</div>
+    <div class="presets">
+      <button class="preset-btn" onclick="loadPreset('basic')">Basic 4/4</button>
+      <button class="preset-btn" onclick="loadPreset('hiphop')">Hip-Hop</button>
+      <button class="preset-btn" onclick="loadPreset('techno')">Techno</button>
+      <button class="preset-btn" onclick="loadPreset('rock')">Rock</button>
+      <button class="preset-btn" onclick="loadPreset('funk')">Funk</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TRACKS = [
+  { id: 'kick',    label: 'KICK',     cls: 'kick-row',    color: '#00f5ff' },
+  { id: 'snare',   label: 'SNARE',    cls: 'snare-row',   color: '#ff006e' },
+  { id: 'hihat',   label: 'HI-HAT',   cls: 'hihat-row',   color: '#ffe600' },
+  { id: 'openhat', label: 'OPEN HAT', cls: 'openhat-row', color: '#00ff88' },
+  { id: 'clap',    label: 'CLAP',     cls: 'clap-row',    color: '#ff6b00' },
+  { id: 'bass',    label: 'BASS',     cls: 'bass-row',    color: '#b700ff' },
+];
+
+const STEPS = 16;
+let grid = {};
+TRACKS.forEach(t => { grid[t.id] = new Array(STEPS).fill(false); });
+
+let audioCtx = null;
+let isPlaying = false;
+let currentStep = 0;
+let nextStepTime = 0;
+let timerID = null;
+let bpm = 120;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function synthKick(when, ctx) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.frequency.setValueAtTime(150, when);
+  osc.frequency.exponentialRampToValueAtTime(0.001, when + 0.5);
+  gain.gain.setValueAtTime(1, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + 0.5);
+  osc.start(when); osc.stop(when + 0.5);
+}
+
+function synthSnare(when, ctx) {
+  const bufferSize = ctx.sampleRate * 0.2;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const noiseGain = ctx.createGain();
+  noise.connect(noiseGain); noiseGain.connect(ctx.destination);
+  noiseGain.gain.setValueAtTime(0.8, when);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, when + 0.2);
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.connect(oscGain); oscGain.connect(ctx.destination);
+  osc.frequency.value = 200;
+  oscGain.gain.setValueAtTime(0.7, when);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, when + 0.1);
+  noise.start(when); noise.stop(when + 0.2);
+  osc.start(when); osc.stop(when + 0.1);
+}
+
+function synthHihat(when, ctx, open = false) {
+  const bufferSize = ctx.sampleRate * (open ? 0.3 : 0.05);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 7000;
+  const gain = ctx.createGain();
+  source.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0.4, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + (open ? 0.3 : 0.05));
+  source.start(when); source.stop(when + (open ? 0.3 : 0.05));
+}
+
+function synthClap(when, ctx) {
+  for (let i = 0; i < 3; i++) {
+    const offset = i * 0.012;
+    const bufferSize = ctx.sampleRate * 0.1;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let j = 0; j < bufferSize; j++) data[j] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1200;
+    const gain = ctx.createGain();
+    source.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.6, when + offset);
+    gain.gain.exponentialRampToValueAtTime(0.001, when + offset + 0.12);
+    source.start(when + offset); source.stop(when + offset + 0.12);
+  }
+}
+
+function synthBass(when, ctx) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 400;
+  osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(80, when);
+  osc.frequency.exponentialRampToValueAtTime(40, when + 0.15);
+  gain.gain.setValueAtTime(0.5, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + 0.15);
+  osc.start(when); osc.stop(when + 0.15);
+}
+
+function scheduleStep(step, time) {
+  const ctx = getAudioCtx();
+  if (grid.kick[step])    synthKick(time, ctx);
+  if (grid.snare[step])   synthSnare(time, ctx);
+  if (grid.hihat[step])   synthHihat(time, ctx, false);
+  if (grid.openhat[step]) synthHihat(time, ctx, true);
+  if (grid.clap[step])    synthClap(time, ctx);
+  if (grid.bass[step])    synthBass(time, ctx);
+}
+
+function scheduler() {
+  const ctx = getAudioCtx();
+  while (nextStepTime < ctx.currentTime + 0.1) {
+    scheduleStep(currentStep, nextStepTime);
+    const stepDuration = 60 / bpm / 4;
+    nextStepTime += stepDuration;
+    currentStep = (currentStep + 1) % STEPS;
+  }
+  timerID = setTimeout(scheduler, 25);
+}
+
+let visualStep = -1;
+function updateVisuals() {
+  if (!isPlaying) return;
+  const ctx = getAudioCtx();
+  const elapsed = ctx.currentTime - startTime;
+  const stepDuration = 60 / bpm / 4;
+  const step = Math.floor(elapsed / stepDuration) % STEPS;
+  if (step !== visualStep) {
+    visualStep = step;
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('playing'));
+    TRACKS.forEach(t => {
+      const el = document.querySelector(`#step-${t.id}-${step}`);
+      if (el) el.classList.add('playing');
+    });
+    const cursor = document.getElementById('playheadCursor');
+    cursor.style.left = (step / STEPS * 100) + '%';
+    updateVis(step);
+  }
+  requestAnimationFrame(updateVisuals);
+}
+
+function updateVis(step) {
+  const bars = document.querySelectorAll('.vis-bar-item');
+  bars.forEach((bar, i) => {
+    const trackId = TRACKS[i % TRACKS.length].id;
+    const intensity = grid[trackId][step] ? Math.random() * 80 + 20 : Math.max(2, parseFloat(bar.style.height) * 0.6 || 2);
+    bar.style.height = intensity + '%';
+    bar.style.background = grid[trackId][step] ? TRACKS[i % TRACKS.length].color : 'var(--border)';
+  });
+}
+
+let startTime = 0;
+
+function togglePlay() {
+  const ctx = getAudioCtx();
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  if (isPlaying) {
+    currentStep = 0;
+    nextStepTime = ctx.currentTime;
+    startTime = ctx.currentTime;
+    scheduler();
+    updateVisuals();
+    btn.textContent = '⏹ STOP';
+    btn.classList.add('active');
+  } else {
+    clearTimeout(timerID);
+    btn.textContent = '▶ PLAY';
+    btn.classList.remove('active');
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('playing'));
+    document.getElementById('playheadCursor').style.left = '0';
+    const bars = document.querySelectorAll('.vis-bar-item');
+    bars.forEach(b => { b.style.height = '2px'; b.style.background = 'var(--border)'; });
+  }
+}
+
+function clearAll() {
+  TRACKS.forEach(t => {
+    grid[t.id].fill(false);
+    for (let s = 0; s < STEPS; s++) {
+      const el = document.querySelector(`#step-${t.id}-${s}`);
+      if (el) el.classList.remove('on');
+    }
+  });
+}
+
+function buildUI() {
+  const seq = document.getElementById('sequencer');
+  seq.innerHTML = '';
+  TRACKS.forEach(t => {
+    const row = document.createElement('div');
+    row.className = `track ${t.cls}`;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'track-name';
+    nameEl.textContent = t.label;
+    const stepsEl = document.createElement('div');
+    stepsEl.className = 'track-steps';
+    for (let s = 0; s < STEPS; s++) {
+      const step = document.createElement('div');
+      step.className = 'step';
+      step.id = `step-${t.id}-${s}`;
+      step.addEventListener('click', () => {
+        grid[t.id][s] = !grid[t.id][s];
+        step.classList.toggle('on', grid[t.id][s]);
+      });
+      stepsEl.appendChild(step);
+    }
+    row.appendChild(nameEl);
+    row.appendChild(stepsEl);
+    seq.appendChild(row);
+  });
+
+  const vis = document.getElementById('visBar');
+  vis.innerHTML = '';
+  for (let i = 0; i < 48; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'vis-bar-item';
+    bar.style.height = '2px';
+    vis.appendChild(bar);
+  }
+}
+
+const PRESETS = {
+  basic: {
+    kick:    [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+    snare:   [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hihat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    openhat: [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
+    clap:    [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    bass:    [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+  },
+  hiphop: {
+    kick:    [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,0],
+    snare:   [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1],
+    hihat:   [1,1,0,1, 1,1,0,1, 1,1,0,1, 1,1,0,1],
+    openhat: [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,0],
+    clap:    [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    bass:    [1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0],
+  },
+  techno: {
+    kick:    [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    snare:   [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hihat:   [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+    openhat: [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
+    clap:    [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+    bass:    [1,0,1,0, 0,0,1,0, 1,0,0,0, 0,1,0,0],
+  },
+  rock: {
+    kick:    [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,0,0],
+    snare:   [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hihat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    openhat: [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1],
+    clap:    [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    bass:    [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+  },
+  funk: {
+    kick:    [1,0,0,1, 0,0,0,0, 1,0,0,0, 0,1,0,0],
+    snare:   [0,0,1,0, 1,0,0,1, 0,0,1,0, 1,0,0,0],
+    hihat:   [1,1,1,1, 0,1,1,0, 1,1,1,1, 0,1,0,1],
+    openhat: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    clap:    [0,0,0,1, 0,0,0,0, 0,0,0,1, 0,0,0,0],
+    bass:    [1,0,1,0, 0,1,0,0, 1,0,0,1, 0,0,1,0],
+  }
+};
+
+function loadPreset(name) {
+  const preset = PRESETS[name];
+  TRACKS.forEach(t => {
+    grid[t.id] = preset[t.id].map(v => v === 1);
+    for (let s = 0; s < STEPS; s++) {
+      const el = document.querySelector(`#step-${t.id}-${s}`);
+      if (el) el.classList.toggle('on', grid[t.id][s]);
+    }
+  });
+}
+
+document.getElementById('playBtn').addEventListener('click', togglePlay);
+document.getElementById('bpmRange').addEventListener('input', e => {
+  bpm = parseInt(e.target.value);
+  document.getElementById('bpmDisplay').textContent = bpm;
+});
+
+buildUI();
+loadPreset('basic');
+</script>
+</body>
+</html>
