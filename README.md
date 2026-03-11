@@ -1,6 +1,6 @@
 # BeatForge
 
-A browser-based 16-step drum sequencer built with the Web Audio API. No dependencies, no install — open `index.html` and start making beats.
+A browser-based 16-step drum sequencer built with the Web Audio API. No dependencies, no install, just open `index.html` and start making beats.
 
 ## Features
 - 6 synthesized drum tracks: Kick, Snare, Hi-Hat, Open Hat, Clap, Bass
